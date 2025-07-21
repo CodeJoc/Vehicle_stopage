@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Vehicle Stoppage Detection System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container">
+                <h1>Advanced Vehicle Stoppage Detection System</h1>
+                <p class="header-subtitle">Multi-vehicle GPS analysis with intelligent trip segmentation</p>
+                <div class="header-controls">
+                    <div class="file-upload-container">
+                        <input type="file" id="csvFileInput" accept=".csv" class="sr-only">
+                        <label for="csvFileInput" class="btn btn--secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Upload GPS Data
+                        </label>
+                    </div>
+                    <button class="btn btn--primary" id="useSampleData">Use Sample Data</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="container">
+                <div class="app-grid">
+                    <!-- Control Panel -->
+                    <aside class="control-panel">
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Detection Algorithms</h3>
+                                <p class="algorithm-description">Select algorithms to use for stoppage detection</p>
+                            </div>
+                            <div class="card__body">
+                                <div class="algorithm-selection">
+                                    <div class="form-group">
+                                        <label class="algorithm-option">
+                                            <input type="checkbox" id="timeGapAlgorithm" checked>
+                                            <span>Time-Gap Detection</span>
+                                            <div class="algorithm-description">Detects stops based on large time gaps between GPS points</div>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="algorithm-option">
+                                            <input type="checkbox" id="speedAlgorithm" checked>
+                                            <span>Speed-Based Detection</span>
+                                            <div class="algorithm-description">Traditional approach using speed thresholds</div>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="algorithm-option">
+                                            <input type="checkbox" id="clusteringAlgorithm" checked>
+                                            <span>Location Clustering</span>
+                                            <div class="algorithm-description">Groups nearby points to identify stopping areas</div>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="algorithm-option">
+                                            <input type="checkbox" id="hybridAlgorithm" checked>
+                                            <span>Hybrid Multi-Criteria</span>
+                                            <div class="algorithm-description">Combines multiple methods for enhanced accuracy</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Parameter Controls</h3>
+                                <p class="algorithm-description">Adjust detection parameters for optimal results</p>
+                            </div>
+                            <div class="card__body">
+                                <div class="parameter-controls" id="parameterControls">
+                                    <!-- Dynamic parameter controls will be inserted here -->
+                                </div>
+                                <div class="control-actions">
+                                    <button class="btn btn--primary btn--full-width" id="detectStoppages">Detect Stoppages</button>
+                                    <button class="btn btn--secondary btn--full-width" id="compareAlgorithms">Compare Algorithms</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Data Quality Metrics</h3>
+                            </div>
+                            <div class="card__body">
+                                <div id="dataQualityMetrics">
+                                    <div class="quality-metric">
+                                        <span class="metric-label">Data Points:</span>
+                                        <span class="metric-value" id="dataPointsCount">-</span>
+                                    </div>
+                                    <div class="quality-metric">
+                                        <span class="metric-label">Time Coverage:</span>
+                                        <span class="metric-value" id="timeCoverage">-</span>
+                                    </div>
+                                    <div class="quality-metric">
+                                        <span class="metric-label">Avg Sampling Rate:</span>
+                                        <span class="metric-value" id="samplingRate">-</span>
+                                    </div>
+                                    <div class="quality-metric">
+                                        <span class="metric-label">Outliers:</span>
+                                        <span class="metric-value" id="outlierCount">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Map Area -->
+                    <div class="map-container">
+                        <div class="map-header">
+                            <div class="map-controls">
+                                <div class="view-mode-toggle">
+                                    <button class="btn btn--sm toggle-btn active" data-mode="route">Route View</button>
+                                    <button class="btn btn--sm toggle-btn" data-mode="heatmap">Stop Density</button>
+                                </div>
+                                <div class="legend" id="mapLegend">
+                                    <!-- Legend will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <div id="map" class="map-display"></div>
+                        <div class="map-footer">
+                            <div id="selectionInfo" class="selection-info">
+                                Click on stoppage markers or route points for detailed information
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Panel -->
+                    <div class="analytics-panel">
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Detection Results Summary</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="results-summary" id="resultsSummary">
+                                    <div class="summary-grid">
+                                        <div class="summary-item">
+                                            <div class="summary-value" id="totalStoppages">0</div>
+                                            <div class="summary-label">Total Stoppages</div>
+                                        </div>
+                                        <div class="summary-item">
+                                            <div class="summary-value" id="totalStopTime">0h 0m</div>
+                                            <div class="summary-label">Total Stop Time</div>
+                                        </div>
+                                        <div class="summary-item">
+                                            <div class="summary-value" id="avgStopDuration">0m</div>
+                                            <div class="summary-label">Avg Stop Duration</div>
+                                        </div>
+                                        <div class="summary-item">
+                                            <div class="summary-value" id="longestStop">0m</div>
+                                            <div class="summary-label">Longest Stop</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Stop Duration Analysis</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="chart-container">
+                                    <canvas id="durationChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Algorithm Performance</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="comparison-table" id="algorithmComparison">
+                                    <div class="comparison-item">
+                                        <span class="algorithm-name">No results yet</span>
+                                        <span class="algorithm-count">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>Export & Reports</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="export-controls">
+                                    <button class="btn btn--outline btn--full-width" id="exportCSV">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2h11l5 5z"></path>
+                                            <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                                            <polyline points="7,3 7,8 15,8"></polyline>
+                                        </svg>
+                                        Export as CSV
+                                    </button>
+                                    <button class="btn btn--outline btn--full-width" id="exportJSON">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14,2 14,8 20,8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10,9 9,9 8,9"></polyline>
+                                        </svg>
+                                        Export as JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Status Messages -->
+        <div id="statusMessages" class="status-messages"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
